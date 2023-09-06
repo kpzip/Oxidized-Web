@@ -40,10 +40,10 @@ fn handle_connection(mut stream: TcpStream) {
     let request_type: &String = http_request.first().unwrap();
 
     let (status, filename): (&str, &str) = match &request_type[..] {
-        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "test.html"),
+        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "html_default/test.html"),
         _ => match bad_request {
             true => ("HTTP/1.1 400 BAD REQUEST", ""),
-            false => ("HTTP/1.1 404 NOT FOUND", "404.html"),
+            false => ("HTTP/1.1 404 NOT FOUND", "html_default/404.html"),
         },
     };
 
