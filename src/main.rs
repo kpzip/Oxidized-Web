@@ -23,6 +23,7 @@ fn main() {
 }
 
 fn handle_connection(mut stream: TcpStream) {
+    let blank: String = String::new();
     let mut bad_request: bool = false;
     let buf_reader: BufReader<&mut TcpStream> = BufReader::new(&mut stream);
     let http_request: Vec<String> = buf_reader
@@ -37,10 +38,20 @@ fn handle_connection(mut stream: TcpStream) {
         .take_while(|line| !line.is_empty())
         .collect();
 
-    let request_type: &String = http_request.first().unwrap();
+    //println!("Request: {:#?}", http_request);
+
+    let request_type: &String = match http_request.first() {
+        Some(req) => req,
+        None => {
+            bad_request = true;
+            &blank
+        }
+    };
 
     let (status, filename): (&str, &str) = match &request_type[..] {
         "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "html_default/test.html"),
+        "GET /test.css HTTP/1.1" => ("HTTP/1.1 200 OK", "html_default/test.css"),
+        "GET /test.js HTTP/1.1" => ("HTTP/1.1 200 OK", "html_default/test.js"),
         _ => match bad_request {
             true => ("HTTP/1.1 400 BAD REQUEST", ""),
             false => ("HTTP/1.1 404 NOT FOUND", "html_default/404.html"),

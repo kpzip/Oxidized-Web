@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <title>Hello!</title>
 	<link rel="stylesheet" href="test.css">
-	<script src="test.js"></script>
   </head>
   <body>
     <h1>Hello!</h1>
