@@ -1,3 +1,4 @@
+mod cache;
 mod threadpool;
 use crate::threadpool::ThreadPool;
 use std::fs;
