@@ -49,19 +49,25 @@ fn handle_connection(mut stream: TcpStream) {
         }
     };
 
-    let (status, filename): (&str, &str) = match &request_type[..] {
-        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "html_default/test.html"),
-        "GET /test.css HTTP/1.1" => ("HTTP/1.1 200 OK", "html_default/test.css"),
-        "GET /test.js HTTP/1.1" => ("HTTP/1.1 200 OK", "html_default/test.js"),
+    let (mut status, filename): (&str, Option<&str>) = match &request_type[..] {
+        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", Some("html_default/test.html")),
+        "GET /test.css HTTP/1.1" => ("HTTP/1.1 200 OK", Some("html_default/test.css")),
+        "GET /test.js HTTP/1.1" => ("HTTP/1.1 200 OK", Some("html_default/test.js")),
         _ => match bad_request {
-            true => ("HTTP/1.1 400 BAD REQUEST", ""),
-            false => ("HTTP/1.1 404 NOT FOUND", "html_default/404.html"),
+            true => ("HTTP/1.1 400 BAD REQUEST", None),
+            false => ("HTTP/1.1 404 NOT FOUND", Some("html_default/404.html")),
         },
     };
 
-    let contents: String = match fs::read_to_string(filename) {
-        Ok(some) => some,
-        Err(_) => String::new(),
+    let contents: String = match filename {
+        Some(file) => match fs::read_to_string(file) {
+            Ok(some) => some,
+            Err(_) => {
+                status = "HTTP/1.1 500 INTERNAL SERVER ERROR";
+                String::new()
+            }
+        },
+        None => String::new(),
     };
 
     respond(&mut stream, status.to_string(), contents);
