@@ -1,7 +1,6 @@
 mod resourcemanager;
 mod threadpool;
 use crate::threadpool::ThreadPool;
-use std::fs;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::net::TcpListener;
@@ -60,7 +59,7 @@ fn handle_connection(mut stream: TcpStream) {
     };
 
     let contents: String = match filename {
-        Some(file) => match fs::read_to_string(file) {
+        Some(file) => match resourcemanager::get_resource_data(file) {
             Ok(some) => some,
             Err(_) => {
                 status = "HTTP/1.1 500 INTERNAL SERVER ERROR";
