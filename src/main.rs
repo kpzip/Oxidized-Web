@@ -1,3 +1,5 @@
+#[macro_use]
+mod macros;
 mod resourcemanager;
 mod threadpool;
 use crate::threadpool::ThreadPool;
@@ -38,7 +40,7 @@ fn handle_connection(mut stream: TcpStream) {
         .take_while(|line| !line.is_empty())
         .collect();
 
-    //println!("Request: {:#?}", http_request);
+    println!("Request: {:#?}", http_request);
 
     let request_type: &String = match http_request.first() {
         Some(req) => req,
@@ -49,12 +51,12 @@ fn handle_connection(mut stream: TcpStream) {
     };
 
     let (mut status, filename): (&str, Option<&str>) = match &request_type[..] {
-        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", Some("html_default/test.html")),
-        "GET /test.css HTTP/1.1" => ("HTTP/1.1 200 OK", Some("html_default/test.css")),
-        "GET /test.js HTTP/1.1" => ("HTTP/1.1 200 OK", Some("html_default/test.js")),
+        "GET / HTTP/1.1" => (responsify!(200), Some("html_default/test.html")),
+        "GET /test.css HTTP/1.1" => (responsify!(200), Some("html_default/test.css")),
+        "GET /test.js HTTP/1.1" => (responsify!(200), Some("html_default/test.js")),
         _ => match bad_request {
-            true => ("HTTP/1.1 400 BAD REQUEST", None),
-            false => ("HTTP/1.1 404 NOT FOUND", Some("html_default/404.html")),
+            true => (responsify!(400), None),
+            false => (responsify!(404), Some("html_default/404.html")),
         },
     };
 
@@ -62,7 +64,7 @@ fn handle_connection(mut stream: TcpStream) {
         Some(file) => match resourcemanager::get_resource_data(file) {
             Ok(some) => some,
             Err(_) => {
-                status = "HTTP/1.1 500 INTERNAL SERVER ERROR";
+                status = responsify!(500);
                 String::new()
             }
         },
