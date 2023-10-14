@@ -2,16 +2,28 @@ use std::io::prelude::*;
 use std::{io::BufReader, net::TcpStream};
 
 #[derive(Debug)]
-pub struct HttpRequest {
-    request: Vec<String>,
-    is_valid: bool,
+pub enum HttpRequest {
+    GET(&'static str, String),
+    POST(&'static str),
+    INVALID,
 }
 
 impl HttpRequest {
-    pub fn new(contents: Vec<String>, is_valid: bool) -> HttpRequest {
-        HttpRequest {
-            request: contents,
-            is_valid,
+    pub fn new(contents: Option<Vec<String>>) -> HttpRequest {
+        match contents {
+            Some(lines) => match lines.first() {
+                Some(firstline) => match firstline.is_empty() {
+                    false => {
+                        if firstline[0..2] == *"GET" {
+                            HttpRequest::GET((), ())
+                        }
+                        HttpRequest::POST(())
+                    }
+                    true => HttpRequest::INVALID,
+                },
+                None => HttpRequest::INVALID,
+            },
+            None => HttpRequest::INVALID,
         }
     }
 
@@ -28,11 +40,10 @@ impl HttpRequest {
             })
             .take_while(|line| !line.is_empty())
             .collect();
-        HttpRequest::new(request, bad_request)
-    }
-
-    pub fn first_line(&self) -> Option<&String> {
-        self.request.first()
+        if bad_request {
+            return HttpRequest::new(None);
+        }
+        HttpRequest::new(Some(request))
     }
 }
 
