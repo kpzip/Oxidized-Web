@@ -2,10 +2,11 @@ use std::io::prelude::*;
 use std::{io::BufReader, net::TcpStream};
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum HttpRequest {
-    GET(&'static str, String),
-    POST(&'static str),
-    INVALID,
+    Get(String, String),
+    Post(String),
+    Invalid,
 }
 
 impl HttpRequest {
@@ -14,16 +15,24 @@ impl HttpRequest {
             Some(lines) => match lines.first() {
                 Some(firstline) => match firstline.is_empty() {
                     false => {
-                        if firstline[0..2] == *"GET" {
-                            HttpRequest::GET((), ())
+                        let words: Vec<&str> = firstline.split(' ').collect();
+                        println!("Words: {:#?}", words);
+                        match *match words.first() {
+                            Some(s) => s,
+                            None => return HttpRequest::Invalid,
+                        } {
+                            "GET" => HttpRequest::Get(
+                                String::from(*words.get(2).unwrap()),
+                                String::from(*words.get(1).unwrap()),
+                            ),
+                            _ => HttpRequest::Invalid,
                         }
-                        HttpRequest::POST(())
                     }
-                    true => HttpRequest::INVALID,
+                    true => HttpRequest::Invalid,
                 },
-                None => HttpRequest::INVALID,
+                None => HttpRequest::Invalid,
             },
-            None => HttpRequest::INVALID,
+            None => HttpRequest::Invalid,
         }
     }
 
@@ -55,5 +64,7 @@ pub fn respond(stream: &mut TcpStream, status: String, contents: String) {
 }
 
 pub fn respond_empty(stream: &mut TcpStream, status: String) {
-    respond(stream, status, String::new())
+    let response: String = format!("{status}\r\nContent-Length: 0\r\n\r\n");
+
+    stream.write_all(response.as_bytes()).unwrap();
 }

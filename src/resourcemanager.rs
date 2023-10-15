@@ -5,7 +5,7 @@ use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 static RESOURCES: RwLock<Vec<CachedResource>> = RwLock::new(Vec::new());
 
-pub fn get_resource_data(name: &'static str) -> Result<String, ServerError> {
+pub fn get_resource_data(name: String) -> Result<String, ServerError> {
     //Try to aquire read permissions
     let reader = match RESOURCES.read() {
         Ok(r) => r,
@@ -21,7 +21,7 @@ pub fn get_resource_data(name: &'static str) -> Result<String, ServerError> {
         }
     }
     drop(reader);
-    let filedata: String = match fs::read_to_string(name) {
+    let filedata: String = match fs::read_to_string(&name) {
         Ok(s) => s,
         Err(e) => return Err(ServerError::FsError(e)),
     };
@@ -39,24 +39,26 @@ pub fn get_resource_data(name: &'static str) -> Result<String, ServerError> {
 }
 
 //Need these two enums to do proper error handling, unfortunately it gets a bit messy
+#[derive(Debug)]
 pub enum ServerError {
     FsError(Error),
     PoisonedResourceError(PoisonedError),
 }
 
+#[derive(Debug)]
 pub enum PoisonedError {
-    PoisonedRead(PoisonError<RwLockReadGuard<'static, Vec<CachedResource<'static>>>>),
-    PoisonedWrite(PoisonError<RwLockWriteGuard<'static, Vec<CachedResource<'static>>>>),
+    PoisonedRead(PoisonError<RwLockReadGuard<'static, Vec<CachedResource>>>),
+    PoisonedWrite(PoisonError<RwLockWriteGuard<'static, Vec<CachedResource>>>),
 }
 
 //set to pub in order to remove warnings
-pub struct CachedResource<'a> {
+pub struct CachedResource {
     data: String,
-    name: &'a str,
+    name: String,
 }
 
-impl CachedResource<'_> {
-    fn new(name: &str, data: String) -> CachedResource {
+impl CachedResource {
+    fn new(name: String, data: String) -> CachedResource {
         CachedResource { data, name }
     }
 }

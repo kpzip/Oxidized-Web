@@ -4,7 +4,10 @@ mod http;
 mod resourcemanager;
 mod threadpool;
 use crate::http::HttpRequest;
+use crate::http::HttpRequest::*;
+use crate::resourcemanager::ServerError::*;
 use crate::threadpool::ThreadPool;
+use std::io::ErrorKind;
 use std::net::TcpListener;
 use std::net::TcpStream;
 
@@ -29,12 +32,46 @@ fn handle_connection(mut stream: TcpStream) {
 
     println!("Request: {:#?}", http_request);
 
+    match http_request {
+        Get(_, resource) => {
+            let filename: String = match resource.as_str() {
+                "/" => String::from("html_default/test.html"),
+                path => {
+                    let mut name: String = String::from("html_default");
+                    name.push_str(path);
+                    name
+                }
+            };
+            match resourcemanager::get_resource_data(filename) {
+                Ok(some) => {
+                    http::respond(&mut stream, String::from(responsify!(200)), some);
+                }
+                Err(e) => match e {
+                    FsError(e) if e.kind() == ErrorKind::NotFound => {
+                        http::respond(
+                            &mut stream,
+                            String::from(responsify!(404)),
+                            resourcemanager::get_resource_data(String::from(
+                                "html_default/404.html",
+                            ))
+                            .unwrap(),
+                        );
+                    }
+                    PoisonedResourceError(_) | FsError(_) => {
+                        http::respond_empty(&mut stream, String::from(responsify!(500)));
+                    }
+                },
+            }
+        }
+        Post(_) => (),
+        Invalid => {
+            http::respond_empty(&mut stream, String::from(responsify!(400)));
+        }
+    }
+    /*
     let request_type: String = match http_request.first_line() {
         Some(req) => req.clone(),
-        None => {
-            http::respond_empty(&mut stream, String::from(responsify!(400)));
-            return;
-        }
+        None => {}
     };
 
     let (mut status, filename): (&str, &str) = match &request_type[..] {
@@ -53,4 +90,5 @@ fn handle_connection(mut stream: TcpStream) {
     };
 
     http::respond(&mut stream, status.to_string(), contents);
+    */
 }
