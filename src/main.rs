@@ -5,7 +5,6 @@ mod resourcemanager;
 mod threadpool;
 use crate::http::HttpRequest;
 use crate::http::HttpRequest::*;
-use crate::resourcemanager::ServerError::*;
 use crate::threadpool::ThreadPool;
 use std::io::ErrorKind;
 use std::net::TcpListener;
@@ -46,8 +45,8 @@ fn handle_connection(mut stream: TcpStream) {
                 Ok(some) => {
                     http::respond(&mut stream, String::from(responsify!(200)), some);
                 }
-                Err(e) => match e {
-                    FsError(e) if e.kind() == ErrorKind::NotFound => {
+                Err(e) => {
+                    if e.is::<std::io::Error>() {
                         http::respond(
                             &mut stream,
                             String::from(responsify!(404)),
@@ -56,11 +55,10 @@ fn handle_connection(mut stream: TcpStream) {
                             ))
                             .unwrap(),
                         );
-                    }
-                    PoisonedResourceError(_) | FsError(_) => {
+                    } else {
                         http::respond_empty(&mut stream, String::from(responsify!(500)));
                     }
-                },
+                }
             }
         }
         Post(_) => (),
