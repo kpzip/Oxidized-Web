@@ -32,8 +32,8 @@ fn handle_connection(mut stream: TcpStream) {
     println!("Request: {:#?}", http_request);
 
     match http_request {
-        Get(_, resource) => {
-            let filename: String = match resource.as_str() {
+        GET(body) => {
+            let filename: String = match body.get_path().as_str() {
                 "/" => String::from("html_default/test.html"),
                 path => {
                     let mut name: String = String::from("html_default");
@@ -61,8 +61,8 @@ fn handle_connection(mut stream: TcpStream) {
                 }
             }
         }
-        Post(_) => (),
-        Invalid => {
+        POST(_) => (),
+        INVALID => {
             http::respond_empty(&mut stream, String::from(responsify!(400)));
         }
     }
